@@ -33,6 +33,7 @@ export class NetworkManager {
         if (res.success) {
           this.roomId = res.roomId;
           this.isHost = true;
+          this.team = res.team || 'red';
         }
         resolve(res);
       });
@@ -49,18 +50,20 @@ export class NetworkManager {
           this.roomId = res.roomId;
           this.players = res.players;
           this.isHost = false;
+          this.team = res.team || 'blue';
         }
         resolve(res);
       });
     });
   }
 
-  sendMove(position, rotation) {
+  sendMove(position, rotation, shipClass) {
     if (this.socket && this.roomId) {
       this.socket.emit('playerMove', {
         roomId: this.roomId,
         position: { x: position.x, y: position.y, z: position.z },
-        rotation: { y: rotation.y }
+        rotation: { y: rotation.y },
+        shipClass
       });
     }
   }

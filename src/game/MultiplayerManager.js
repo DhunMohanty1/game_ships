@@ -45,16 +45,43 @@ export class MultiplayerManager {
   addRemoteShip(player) {
     if (this.remoteShips[player.id]) return;
 
-    // Local player is Red, remote players are Blue for MVP
-    const ship = createShip('blue');
+    const team = player.team || 'blue';
+    const ship = createShip(team, player.shipClass || 'galleon');
     ship.position.copy(player.position);
     ship.rotation.y = player.rotation.y;
 
     ship.userData.targetPosition = new THREE.Vector3().copy(player.position);
     ship.userData.targetRotationY = player.rotation.y;
+    ship.userData.id = player.id;
     
     this.scene.add(ship);
     this.remoteShips[player.id] = ship;
+  }
+
+  fireRemoteCannons(id, position, direction, side, projectileSystem) {
+    const ship = this.remoteShips[id];
+    if (!ship || !ship.userData.cannons) return;
+    
+    // Convert direction vector
+    const dir = new THREE.Vector3(direction.x, direction.y, direction.z);
+
+    ship.userData.cannons.forEach(cannon => {
+      if (cannon.side === side) {
+        const firePos = cannon.mesh.getWorldPosition(new THREE.Vector3());
+        
+        const shootDir = new THREE.Vector3().subVectors(position, firePos).normalize();
+        // Since we only have the general target 'position', we use the original logic
+        // But for simplicity, we can just use the provided general 'dir' and add variance
+        const finalDir = dir.clone();
+        finalDir.x += (Math.random() - 0.5) * 0.05;
+        finalDir.z += (Math.random() - 0.5) * 0.05;
+        finalDir.y += 0.05; // slight arc
+        finalDir.normalize();
+
+        projectileSystem.spawnProjectile(firePos, finalDir, ship.name);
+        projectileSystem.spawnSmoke(firePos);
+      }
+    });
   }
 
   removeRemoteShip(id) {

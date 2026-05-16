@@ -110,6 +110,56 @@ export class ProjectileSystem {
     this.spawnSmoke(position); // extra smoke
   }
 
+  spawnWake(position, speedMult) {
+    const mesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.5, 1.5),
+      this.splashMat
+    );
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.position.copy(position);
+    mesh.position.y = 0.1; // Just above water
+    this.scene.add(mesh);
+    
+    this.particles.push({
+      mesh,
+      velocity: new THREE.Vector3(0, 0, 0),
+      scale: 1,
+      life: 0,
+      maxLife: 2.0 + speedMult,
+      type: 'wake'
+    });
+  }
+
+  spawnFoam(position) {
+    const count = 3;
+    for (let i = 0; i < count; i++) {
+      const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.2, 0.2, 0.2),
+        this.splashMat
+      );
+      mesh.position.copy(position);
+      
+      // Randomize slightly
+      mesh.position.x += (Math.random() - 0.5) * 1.5;
+      mesh.position.z += (Math.random() - 0.5) * 1.5;
+
+      this.scene.add(mesh);
+      
+      this.particles.push({
+        mesh,
+        velocity: new THREE.Vector3(
+          (Math.random() - 0.5) * 2,
+          Math.random() * 2,
+          (Math.random() - 0.5) * 2
+        ),
+        scale: 1,
+        life: 0,
+        maxLife: 0.8,
+        type: 'splash' // reuse splash logic
+      });
+    }
+  }
+
   spawnDebris(position) {
     const count = 8;
     for(let i=0; i<count; i++) {
@@ -173,7 +223,8 @@ export class ProjectileSystem {
       } else if (p.type === 'smoke') {
         p.mesh.position.addScaledVector(p.velocity, delta);
       }
-      
+      // wake does not move (velocity is 0)
+
       const t = p.life / p.maxLife;
       
       if (p.type === 'smoke') {
@@ -185,6 +236,10 @@ export class ProjectileSystem {
         p.mesh.scale.set(p.scale, p.scale, p.scale);
       } else if (p.type === 'explosion_light') {
         p.mesh.intensity = 10.0 * (1 - t);
+      } else if (p.type === 'wake') {
+        p.scale = 1 + t * 2;
+        p.mesh.scale.set(p.scale, p.scale, p.scale);
+        p.mesh.material.opacity = 0.6 * (1 - t);
       }
 
       if (p.life > p.maxLife) {

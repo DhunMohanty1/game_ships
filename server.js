@@ -40,27 +40,34 @@ io.on('connection', (socket) => {
     rooms[roomId].players[socket.id] = {
       id: socket.id,
       position: { x: 0, y: 1.0, z: -18 },
-      rotation: { y: 0 }
+      rotation: { y: 0 },
+      team: 'red'
     };
     
     console.log(`Room created: ${roomId} by ${socket.id}`);
-    callback({ success: true, roomId });
+    callback({ success: true, roomId, team: 'red' });
   });
 
   socket.on('joinRoom', (roomId, callback) => {
     roomId = roomId.toUpperCase();
     if (rooms[roomId]) {
       socket.join(roomId);
+      
+      // Assign alternating teams based on current player count
+      const playerCount = Object.keys(rooms[roomId].players).length;
+      const team = (playerCount % 2 === 0) ? 'red' : 'blue';
+
       rooms[roomId].players[socket.id] = {
         id: socket.id,
         position: { x: 0, y: 1.0, z: -18 },
-        rotation: { y: 0 }
+        rotation: { y: 0 },
+        team: team
       };
       
-      console.log(`Player ${socket.id} joined room: ${roomId}`);
+      console.log(`Player ${socket.id} joined room: ${roomId} on team ${team}`);
       
       // Send current players to the new player
-      callback({ success: true, roomId, players: rooms[roomId].players });
+      callback({ success: true, roomId, players: rooms[roomId].players, team: team });
       
       // Notify others in the room
       socket.to(roomId).emit('playerJoined', rooms[roomId].players[socket.id]);
@@ -70,16 +77,18 @@ io.on('connection', (socket) => {
   });
 
   socket.on('playerMove', (data) => {
-    const { roomId, position, rotation } = data;
+    const { roomId, position, rotation, shipClass } = data;
     if (roomId && rooms[roomId] && rooms[roomId].players[socket.id]) {
       rooms[roomId].players[socket.id].position = position;
       rooms[roomId].players[socket.id].rotation = rotation;
+      if (shipClass) rooms[roomId].players[socket.id].shipClass = shipClass;
       
       // Broadcast to others in the room
       socket.to(roomId).emit('playerMoved', {
         id: socket.id,
         position,
-        rotation
+        rotation,
+        shipClass: rooms[roomId].players[socket.id].shipClass
       });
     }
   });

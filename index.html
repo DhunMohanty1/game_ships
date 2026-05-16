@@ -124,14 +124,16 @@
     }
 
     #crosshair {
-      position: absolute;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 20px;
       height: 20px;
       border: 2px solid rgba(255, 0, 0, 0.8);
       border-radius: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
       display: none;
+      pointer-events: none;
       z-index: 1000;
     }
 
@@ -164,6 +166,40 @@
     <div class="title">Sea of Tides</div>
     <button class="btn" id="btn-singleplayer">Play Single Player</button>
     <button class="btn" id="btn-multiplayer">Play Multiplayer</button>
+  </div>
+
+  <!-- Ship Selection Screen -->
+  <div id="ship-selection-screen" class="screen hidden">
+    <div class="title" style="font-size: 36px;">Select Your Ship</div>
+    <div class="panel" style="flex-direction: row; gap: 20px; flex-wrap: wrap; justify-content: center; max-width: 800px;">
+      
+      <button class="btn ship-btn" data-ship="sloop" style="display:flex; flex-direction:column; align-items:center;">
+        <span style="font-size:24px; color:#ffd700;">Sloop</span>
+        <span style="font-size:12px; opacity:0.8;">Very Fast • High Turn • 2 Cannons</span>
+      </button>
+
+      <button class="btn ship-btn" data-ship="brigantine" style="display:flex; flex-direction:column; align-items:center;">
+        <span style="font-size:24px; color:#ffd700;">Brigantine</span>
+        <span style="font-size:12px; opacity:0.8;">Fast • Medium Turn • 4 Cannons</span>
+      </button>
+
+      <button class="btn ship-btn" data-ship="frigate" style="display:flex; flex-direction:column; align-items:center;">
+        <span style="font-size:24px; color:#ffd700;">Frigate</span>
+        <span style="font-size:12px; opacity:0.8;">Medium • Medium Turn • 6 Cannons</span>
+      </button>
+
+      <button class="btn ship-btn" data-ship="galleon" style="display:flex; flex-direction:column; align-items:center;">
+        <span style="font-size:24px; color:#ffd700;">Galleon</span>
+        <span style="font-size:12px; opacity:0.8;">Slow • Slow Turn • 8 Cannons</span>
+      </button>
+
+      <button class="btn ship-btn" data-ship="manowar" style="display:flex; flex-direction:column; align-items:center; border-color:#ff3333;">
+        <span style="font-size:24px; color:#ff3333;">Man-O-War</span>
+        <span style="font-size:12px; opacity:0.8;">Very Slow • Very Slow Turn • 12 Cannons</span>
+      </button>
+
+    </div>
+    <button class="btn" id="btn-back-to-home" style="margin-top: 20px; background: #333; border-color: #555;">Back</button>
   </div>
 
   <!-- Lobby Screen -->

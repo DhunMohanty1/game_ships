@@ -5,11 +5,6 @@ export class ShipBuoyancy {
   constructor(ship) {
     this.ship = ship;
 
-    this.front = new THREE.Vector3(0, 0, 5.4);
-    this.back = new THREE.Vector3(0, 0, -5.4);
-    this.left = new THREE.Vector3(-2.5, 0, 0);
-    this.right = new THREE.Vector3(2.5, 0, 0);
-
     this._worldPoint = new THREE.Vector3();
     this._tmp = new THREE.Vector3();
   }
@@ -22,26 +17,35 @@ export class ShipBuoyancy {
   update(time, delta) {
     this.ship.updateMatrixWorld(true);
 
-    const frontH = this.sampleHeight(this.front, time);
-    const backH = this.sampleHeight(this.back, time);
-    const leftH = this.sampleHeight(this.left, time);
-    const rightH = this.sampleHeight(this.right, time);
+    const fLen = this.ship.userData.forwardLength || 5.4;
+    const sWid = this.ship.userData.sideWidth || 2.5;
+
+    const front = new THREE.Vector3(0, 0, fLen);
+    const back = new THREE.Vector3(0, 0, -fLen);
+    const left = new THREE.Vector3(-sWid, 0, 0);
+    const right = new THREE.Vector3(sWid, 0, 0);
+
+    const frontH = this.sampleHeight(front, time);
+    const backH = this.sampleHeight(back, time);
+    const leftH = this.sampleHeight(left, time);
+    const rightH = this.sampleHeight(right, time);
 
     const avgHeight = (frontH + backH + leftH + rightH) * 0.25;
     const targetY = avgHeight + this.ship.userData.waterlineOffset;
 
+    // Amplify the height differences to make the ship crash through waves dramatically
     const pitchTarget = Math.atan2(
-      frontH - backH,
-      this.ship.userData.forwardLength * 2.0
+      (frontH - backH) * 2.5,
+      fLen * 2.0
     );
 
     const rollTarget = Math.atan2(
-      rightH - leftH,
-      this.ship.userData.sideWidth * 2.0
+      (rightH - leftH) * 1.5,
+      sWid * 2.0
     );
 
     const yLerp = 1.0 - Math.exp(-3.5 * delta);
-    const rotLerp = 1.0 - Math.exp(-5.0 * delta);
+    const rotLerp = 1.0 - Math.exp(-3.0 * delta); // Slower, heavier rotation feel
 
     this.ship.position.y = THREE.MathUtils.lerp(
       this.ship.position.y,

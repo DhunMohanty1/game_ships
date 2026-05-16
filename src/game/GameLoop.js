@@ -97,6 +97,10 @@ export class GameLoop {
 
     window.addEventListener('resize', () => this.onResize());
 
+    this.windDirection = new THREE.Vector3(1, 0, 0).normalize();
+    // Expose wind to window for easy access
+    window.gameWind = this.windDirection;
+
     this.clock.start();
     requestAnimationFrame(this.animate);
   }
@@ -107,17 +111,39 @@ export class GameLoop {
     this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
 
-  startGame(isMultiplayer) {
+  startGame(isMultiplayer, shipClass = 'galleon') {
     this.started = true;
     this.isMultiplayer = isMultiplayer;
+
+    // Create new ship based on class
+    if (this.ship) {
+      this.scene.remove(this.ship);
+    }
+    const team = (isMultiplayer && this.networkManager && this.networkManager.team) ? this.networkManager.team : 'red';
+    const spawnPos = this.arena.userData.spawnPoints[team];
+    this.ship = createShip(team, shipClass);
+    this.ship.position.copy(spawnPos);
+    this.ship.rotation.y = team === 'red' ? 0 : Math.PI;
+    this.scene.add(this.ship);
+
+    // Re-bind controllers
+    this.shipController = new ShipController(this.ship, this.input);
+    this.shipBuoyancy = new ShipBuoyancy(this.ship);
+    this.cameraController = new CameraController(this.camera, this.ship, this.input);
+    this.cannonSystem = new CannonSystem(this.ship, this.scene, this.input, this.projectileSystem, this.networkManager, this.cameraController);
+
+    if (this.physicsSystem) {
+       this.physicsSystem.mainShip = this.ship;
+    }
 
     if (isMultiplayer) {
       this.multiplayerManager = new MultiplayerManager(this.scene, this.networkManager);
       this.physicsSystem.multiplayerManager = this.multiplayerManager;
       
       this.networkManager.socket.on('playerFired', (data) => {
-        this.projectileSystem.spawnProjectile(data.position, data.direction, data.id);
-        this.projectileSystem.spawnSmoke(data.position);
+        if (this.multiplayerManager.remoteShips[data.id]) {
+          this.multiplayerManager.fireRemoteCannons(data.id, data.position, data.direction, data.side, this.projectileSystem);
+        }
       });
     }
   }
@@ -154,7 +180,21 @@ export class GameLoop {
         this.multiplayerManager.update(delta);
         
         if (Math.floor(time * 10) > Math.floor((time - delta) * 10)) {
-           this.networkManager.sendMove(this.ship.position, this.ship.rotation);
+           this.networkManager.sendMove(this.ship.position, this.ship.rotation, this.ship.userData.shipClass);
+        }
+      }
+
+      // Visuals: Wake and Foam
+      if (this.shipController && Math.abs(this.shipController.speed) > 2.0) {
+        if (Math.random() < 0.3) {
+          const backOffset = new THREE.Vector3(0, 0, -(this.ship.userData.forwardLength || 5.4)).applyQuaternion(this.ship.quaternion);
+          const wakePos = this.ship.position.clone().add(backOffset);
+          this.projectileSystem.spawnWake(wakePos, Math.abs(this.shipController.speed) / 10);
+        }
+        if (this.shipController.speed > 5.0 && Math.random() < 0.2) {
+          const frontOffset = new THREE.Vector3(0, 0, (this.ship.userData.forwardLength || 5.4)).applyQuaternion(this.ship.quaternion);
+          const foamPos = this.ship.position.clone().add(frontOffset);
+          this.projectileSystem.spawnFoam(foamPos);
         }
       }
     }

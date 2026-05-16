@@ -23,58 +23,77 @@ export function createArena() {
     flatShading: true,
   });
 
+  // Helper to create islands
+  const createIsland = (x, z, radius, isSpawn = false) => {
+    const island = new THREE.Group();
+    island.position.set(x, 0, z);
+
+    const baseGeo = new THREE.CylinderGeometry(radius, radius * 1.2, 4, 12);
+    const base = new THREE.Mesh(baseGeo, isSpawn ? sandMat : grassMat);
+    base.position.y = -1;
+    base.receiveShadow = true;
+    base.castShadow = true;
+    base.geometry.computeBoundingSphere();
+    base.userData.radius = base.geometry.boundingSphere.radius;
+    island.add(base);
+
+    // Add some rocks
+    const numRocks = Math.floor(radius / 5);
+    for(let i=0; i<numRocks; i++) {
+       const rockGeo = new THREE.DodecahedronGeometry(3 + Math.random()*5);
+       const rock = new THREE.Mesh(rockGeo, rockMat);
+       rock.position.set((Math.random()-0.5)*radius*1.2, 2, (Math.random()-0.5)*radius*1.2);
+       rock.rotation.y = Math.random() * Math.PI;
+       rock.castShadow = true;
+       rock.receiveShadow = true;
+       rock.geometry.computeBoundingSphere();
+       rock.userData.radius = rock.geometry.boundingSphere.radius;
+       island.add(rock);
+    }
+
+    return island;
+  };
+
   // Main central island
-  const mainIslandGeo = new THREE.CylinderGeometry(25, 30, 4, 12);
-  const mainIsland = new THREE.Mesh(mainIslandGeo, grassMat);
-  mainIsland.position.set(0, -1, 0);
-  mainIsland.receiveShadow = true;
-  mainIsland.castShadow = true;
-  
-  // Add some rocks to the main island
-  for(let i=0; i<4; i++) {
-     const rockGeo = new THREE.DodecahedronGeometry(5 + Math.random()*3);
+  arena.add(createIsland(0, 0, 45));
+
+  // Additional islands scattered around
+  arena.add(createIsland(120, 80, 25));
+  arena.add(createIsland(-100, -120, 30));
+  arena.add(createIsland(150, -100, 20));
+  arena.add(createIsland(-140, 130, 35));
+
+  // Massive rock formations
+  for (let i = 0; i < 15; i++) {
+     const rockGeo = new THREE.DodecahedronGeometry(15 + Math.random()*15, 1);
      const rock = new THREE.Mesh(rockGeo, rockMat);
-     rock.position.set((Math.random()-0.5)*30, 2, (Math.random()-0.5)*30);
+     rock.position.set((Math.random()-0.5)*500, 5, (Math.random()-0.5)*500);
+     rock.scale.set(1, 2 + Math.random()*2, 1);
      rock.rotation.y = Math.random() * Math.PI;
      rock.castShadow = true;
      rock.receiveShadow = true;
-     mainIsland.add(rock);
+     rock.geometry.computeBoundingSphere();
+     rock.userData.radius = rock.geometry.boundingSphere.radius * 0.9;
+     arena.add(rock);
   }
 
-  // Calculate simple collision radius for the central island
-  mainIsland.geometry.computeBoundingSphere();
-  mainIsland.userData.radius = mainIsland.geometry.boundingSphere.radius;
-  arena.add(mainIsland);
-
   // Red Team Spawn Island (North)
-  const redIslandGeo = new THREE.CylinderGeometry(15, 18, 2, 8);
-  const redIsland = new THREE.Mesh(redIslandGeo, sandMat);
-  redIsland.position.set(0, -0.5, -80);
-  redIsland.receiveShadow = true;
-  redIsland.castShadow = true;
-  redIsland.geometry.computeBoundingSphere();
-  redIsland.userData.radius = redIsland.geometry.boundingSphere.radius;
+  const redIsland = createIsland(0, -320, 30, true);
   arena.add(redIsland);
 
   // Blue Team Spawn Island (South)
-  const blueIslandGeo = new THREE.CylinderGeometry(15, 18, 2, 8);
-  const blueIsland = new THREE.Mesh(blueIslandGeo, sandMat);
-  blueIsland.position.set(0, -0.5, 80);
-  blueIsland.receiveShadow = true;
-  blueIsland.castShadow = true;
-  blueIsland.geometry.computeBoundingSphere();
-  blueIsland.userData.radius = blueIsland.geometry.boundingSphere.radius;
+  const blueIsland = createIsland(0, 320, 30, true);
   arena.add(blueIsland);
 
   // Add perimeter rocks so you can't sail forever
-  const numRocks = 16;
-  const radius = 120;
+  const numRocks = 36;
+  const mapRadius = 400;
   for (let i = 0; i < numRocks; i++) {
     const angle = (i / numRocks) * Math.PI * 2;
-    const rockGeo = new THREE.DodecahedronGeometry(12, 1);
+    const rockGeo = new THREE.DodecahedronGeometry(18, 1);
     const rock = new THREE.Mesh(rockGeo, rockMat);
-    rock.position.set(Math.cos(angle) * radius, -2, Math.sin(angle) * radius);
-    rock.scale.set(1, 2, 1);
+    rock.position.set(Math.cos(angle) * mapRadius, -2, Math.sin(angle) * mapRadius);
+    rock.scale.set(1, 3, 1);
     rock.rotation.y = Math.random() * Math.PI;
     rock.castShadow = true;
     rock.receiveShadow = true;
@@ -85,8 +104,8 @@ export function createArena() {
 
   // Spawn positions
   arena.userData.spawnPoints = {
-    red: new THREE.Vector3(0, 1.0, -60), // Just outside the red island
-    blue: new THREE.Vector3(0, 1.0, 60), // Just outside the blue island
+    red: new THREE.Vector3(0, 1.0, -280), // Just south of the red island
+    blue: new THREE.Vector3(0, 1.0, 280), // Just north of the blue island
   };
 
   return arena;

@@ -2,9 +2,12 @@ export class UIManager {
   constructor(gameLoop) {
     this.gameLoop = gameLoop;
     this.mode = 'menu'; // menu, lobby, game
+    this.pendingMode = null; // 'single' or 'multi'
+    this.selectedShip = 'galleon';
 
     // Screens
     this.homeScreen = document.getElementById('home-screen');
+    this.shipSelectionScreen = document.getElementById('ship-selection-screen');
     this.lobbyScreen = document.getElementById('lobby-screen');
     this.gameUi = document.getElementById('game-ui');
     this.tip = document.getElementById('tip');
@@ -13,6 +16,10 @@ export class UIManager {
     // Home buttons
     this.btnSingleplayer = document.getElementById('btn-singleplayer');
     this.btnMultiplayer = document.getElementById('btn-multiplayer');
+    this.btnBackToHome = document.getElementById('btn-back-to-home');
+
+    // Ship selection buttons
+    this.shipBtns = document.querySelectorAll('.ship-btn');
 
     // Lobby elements
     this.lobbyOptions = document.getElementById('lobby-options');
@@ -34,21 +41,44 @@ export class UIManager {
   }
 
   bindEvents() {
-    this.btnSingleplayer.addEventListener('click', () => {
-      this.startGame(false);
+    this.btnSingleplayer.addEventListener('click', (e) => {
+      e.target.blur();
+      this.pendingMode = 'single';
+      this.showScreen(this.shipSelectionScreen);
     });
 
-    this.btnMultiplayer.addEventListener('click', () => {
-      this.showScreen(this.lobbyScreen);
-      this.lobbyOptions.classList.remove('hidden');
-      this.roomWaiting.classList.add('hidden');
+    this.btnMultiplayer.addEventListener('click', (e) => {
+      e.target.blur();
+      this.pendingMode = 'multi';
+      this.showScreen(this.shipSelectionScreen);
     });
 
-    this.btnLobbyBack.addEventListener('click', () => {
+    this.btnBackToHome.addEventListener('click', (e) => {
+      e.target.blur();
       this.showScreen(this.homeScreen);
     });
 
-    this.btnCreateRoom.addEventListener('click', async () => {
+    this.shipBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.target.blur();
+        this.selectedShip = btn.dataset.ship;
+        if (this.pendingMode === 'single') {
+          this.startGame(false);
+        } else {
+          this.showScreen(this.lobbyScreen);
+          this.lobbyOptions.classList.remove('hidden');
+          this.roomWaiting.classList.add('hidden');
+        }
+      });
+    });
+
+    this.btnLobbyBack.addEventListener('click', (e) => {
+      e.target.blur();
+      this.showScreen(this.shipSelectionScreen);
+    });
+
+    this.btnCreateRoom.addEventListener('click', async (e) => {
+      e.target.blur();
       if (!this.gameLoop.networkManager) return;
       const res = await this.gameLoop.networkManager.createRoom();
       if (res.success) {
@@ -111,6 +141,7 @@ export class UIManager {
 
   showScreen(screen) {
     this.homeScreen.classList.add('hidden');
+    this.shipSelectionScreen.classList.add('hidden');
     this.lobbyScreen.classList.add('hidden');
     this.gameUi.classList.add('hidden');
     
@@ -129,14 +160,14 @@ export class UIManager {
 
     this.setGameUi('Sea of Tides', isMultiplayer ? 'Multiplayer Mode - Sail with WASD' : 'WASD to sail • Space = anchor');
     
-    // Clicking anywhere in the game UI focuses the window but doesn't lock pointer
+    // Clicking anywhere in the game UI requests pointer lock
     document.body.addEventListener('click', () => {
       if (this.mode === 'game') {
-        // We removed pointer lock to allow decoupled mouse aiming
+        this.gameLoop.input.requestPointerLock();
       }
     });
 
-    this.gameLoop.startGame(isMultiplayer);
+    this.gameLoop.startGame(isMultiplayer, this.selectedShip);
   }
 
   setGameUi(title, hint) {

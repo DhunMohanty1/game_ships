@@ -6,8 +6,10 @@ export class CameraController {
     this.target = target;
     this.input = input;
 
-    this.distance = 15.5;
-    this.heightOffset = 4.5;
+    // Scale camera distance based on the ship's length
+    const fLen = (target && target.userData && target.userData.forwardLength) || 3.5;
+    this.distance = 15.0 + (fLen * 2.5); // Sloop (fLen 2.8) -> 22. Brigantine -> 25. ManOWar (fLen 4.5) -> 26.
+    this.heightOffset = 4.5 + (fLen * 0.8);
     
     // Default angles (looking forward relative to ship)
     this.yaw = Math.PI; 
@@ -23,8 +25,8 @@ export class CameraController {
   update(delta) {
     // Update yaw and pitch from mouse movement
     if (this.input.isPointerLocked) {
-      this.yaw -= this.input.movementX * 0.003;
-      this.pitch -= this.input.movementY * 0.003;
+      this.yaw -= this.input.mouseDelta.x * 0.003;
+      this.pitch -= this.input.mouseDelta.y * 0.003;
       
       // Clamp pitch so we don't look upside down or go under the water (too much)
       this.pitch = Math.max(-Math.PI / 4, Math.min(Math.PI / 3, this.pitch));
