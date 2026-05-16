@@ -1,189 +1,169 @@
 import * as THREE from 'three';
 
-export function createShip() {
-  const ship = new THREE.Group();
-  ship.name = 'PlayerShip';
+export function createShip(team = 'red') {
+  const group = new THREE.Group();
+  group.name = 'PirateShip';
 
+  // Saturated Cartoon Colors
+  const teamColorHex = team === 'blue' ? 0x2255ff : 0xff3322;
+  
   const hullMaterial = new THREE.MeshStandardMaterial({
-    color: 0x6b3d20,
-    roughness: 1.0,
+    color: teamColorHex,
+    roughness: 0.6,
     metalness: 0.0,
     flatShading: true,
   });
 
-  const darkWoodMaterial = new THREE.MeshStandardMaterial({
-    color: 0x3a2417,
-    roughness: 1.0,
+  const darkWoodMat = new THREE.MeshStandardMaterial({
+    color: 0x5c3a21,
+    roughness: 0.8,
     metalness: 0.0,
     flatShading: true,
   });
 
   const deckMaterial = new THREE.MeshStandardMaterial({
-    color: 0x9a6a3a,
-    roughness: 1.0,
+    color: 0x8a5a19,
+    roughness: 0.9,
     metalness: 0.0,
     flatShading: true,
   });
 
   const clothMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf2efe7,
+    color: 0xffffff, // Bright white sail
     roughness: 0.95,
     metalness: 0.0,
     side: THREE.DoubleSide,
+    flatShading: true,
   });
 
-  const flagMaterial = new THREE.MeshStandardMaterial({
-    color: 0xf26d6d,
-    roughness: 1.0,
-    metalness: 0.0,
-    side: THREE.DoubleSide,
+  const metalMaterial = new THREE.MeshStandardMaterial({
+    color: 0x444444,
+    roughness: 0.5,
+    metalness: 0.5,
+    flatShading: true,
   });
 
-  // Hull
+  // Scale factor to make the ship larger and chunkier
+  const s = 1.8;
+
+  // Main Hull (Chunky oval shape)
   const hull = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.55, 1.15, 10.6, 6, 1, false),
+    new THREE.BoxGeometry(3.5 * s, 1.8 * s, 7 * s),
     hullMaterial
   );
-  hull.rotation.x = Math.PI / 2;
-  hull.scale.set(1.25, 1.0, 1.0);
-  hull.position.y = 0.0;
-  ship.add(hull);
-
-  // Keel
-  const keel = new THREE.Mesh(
-    new THREE.BoxGeometry(0.35, 0.25, 8.5),
-    darkWoodMaterial
-  );
-  keel.position.set(0, -0.72, 0);
-  ship.add(keel);
+  hull.position.y = 0.9 * s;
 
   // Deck
   const deck = new THREE.Mesh(
-    new THREE.BoxGeometry(3.2, 0.35, 6.8),
+    new THREE.BoxGeometry(3.4 * s, 0.4 * s, 6.8 * s),
     deckMaterial
   );
-  deck.position.set(0, 0.72, 0);
-  ship.add(deck);
+  deck.position.set(0, 1.8 * s, 0);
 
-  // Bow
-  const bow = new THREE.Mesh(
-    new THREE.ConeGeometry(1.05, 2.1, 6),
-    hullMaterial
+  // Masts (Thick and cartoonish)
+  const mainMast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.3 * s, 0.3 * s, 6 * s, 8),
+    darkWoodMat
   );
-  bow.rotation.x = Math.PI / 2;
-  bow.position.set(0, 0.05, 5.9);
-  ship.add(bow);
+  mainMast.position.set(0, 4.0 * s, 0);
 
-  // Stern
-  const stern = new THREE.Mesh(
-    new THREE.ConeGeometry(0.95, 1.8, 6),
-    hullMaterial
-  );
-  stern.rotation.x = -Math.PI / 2;
-  stern.position.set(0, 0.05, -5.85);
-  ship.add(stern);
+  const sailsList = [];
 
-  // Cabin
-  const cabinBase = new THREE.Mesh(
-    new THREE.BoxGeometry(2.2, 1.1, 2.6),
-    darkWoodMaterial
-  );
-  cabinBase.position.set(0, 1.25, -1.8);
-  ship.add(cabinBase);
-
-  const cabinRoof = new THREE.Mesh(
-    new THREE.CylinderGeometry(1.55, 1.55, 0.6, 6),
-    deckMaterial
-  );
-  cabinRoof.rotation.x = Math.PI / 2;
-  cabinRoof.position.set(0, 1.95, -1.8);
-  ship.add(cabinRoof);
-
-  // Mast
-  const mast = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14, 0.18, 8.8, 6),
-    darkWoodMaterial
-  );
-  mast.position.set(0, 4.2, -0.3);
-  ship.add(mast);
-
-  // Boom
-  const boom = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.1, 4.9, 6),
-    darkWoodMaterial
-  );
-  boom.rotation.z = Math.PI / 2;
-  boom.position.set(0.55, 3.0, -0.3);
-  ship.add(boom);
-
-  // Main sail
-  const sail1 = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.4, 3.3, 1, 1),
-    clothMaterial
-  );
-  sail1.position.set(1.55, 3.45, -0.35);
-  sail1.rotation.y = -Math.PI / 2;
-  ship.add(sail1);
-
-  // Front sail
-  const sail2 = new THREE.Mesh(
-    new THREE.PlaneGeometry(2.0, 2.7, 1, 1),
-    clothMaterial
-  );
-  sail2.position.set(-0.95, 2.95, 0.5);
-  sail2.rotation.y = -Math.PI / 2;
-  sail2.rotation.z = 0.12;
-  ship.add(sail2);
-
-  // Flag
-  const flagPole = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.04, 0.05, 1.5, 4),
-    darkWoodMaterial
-  );
-  flagPole.position.set(0, 5.4, -0.1);
-  ship.add(flagPole);
-
-  const flag = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.9, 0.55),
-    flagMaterial
-  );
-  flag.position.set(0.45, 5.55, -0.1);
-  flag.rotation.y = -Math.PI / 2;
-  ship.add(flag);
-
-  // Railings
-  for (let i = -1; i <= 1; i++) {
-    const railL = new THREE.Mesh(
-      new THREE.BoxGeometry(0.12, 0.25, 6.3),
-      darkWoodMaterial
+  // Simple, oversized sail
+  const createSail = (w, h, mast, yOffset, zOffset) => {
+    const boom = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.15 * s, 0.15 * s, w * s, 8),
+      darkWoodMat
     );
-    railL.position.set(-1.55, 1.15, i * 0.05);
-    ship.add(railL);
+    boom.rotation.z = Math.PI / 2;
+    boom.position.set(0, yOffset * s, zOffset * s);
+    sailsList.push(boom);
 
-    const railR = new THREE.Mesh(
-      new THREE.BoxGeometry(0.12, 0.25, 6.3),
-      darkWoodMaterial
+    const sail = new THREE.Mesh(
+      new THREE.PlaneGeometry(w * s, h * s, 2, 2),
+      clothMaterial
     );
-    railR.position.set(1.55, 1.15, i * 0.05);
-    ship.add(railR);
-  }
-
-  ship.userData = {
-    waterlineOffset: 0.95,
-    forwardLength: 5.4,
-    sideWidth: 2.5,
-    anchorDown: false,
+    sail.position.set(0, (yOffset - h / 2) * s, (zOffset + 0.2) * s);
+    
+    // Add billow
+    const pos = sail.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const px = pos.getX(i);
+      const billow = Math.cos((px / (w * s)) * Math.PI) * 1.5;
+      pos.setZ(i, pos.getZ(i) + billow);
+    }
+    sail.geometry.computeVertexNormals();
+    sailsList.push(sail);
   };
 
-  ship.position.y = 1.0;
-  ship.rotation.y = 0;
+  createSail(4.5, 4.0, mainMast, 6.5, -0.5); 
 
-  ship.traverse((obj) => {
+  // Big, exaggerated cannons
+  group.userData.cannons = [];
+  const cannonGroups = [];
+  
+  const addCannon = (x, z, side) => {
+    const cannonGroup = new THREE.Group();
+    
+    const barrel = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.3 * s, 0.4 * s, 1.5 * s, 8),
+      metalMaterial
+    );
+    barrel.rotation.z = Math.PI / 2;
+    barrel.position.set(side === 'right' ? 0.6 * s : -0.6 * s, 0.3 * s, 0);
+    cannonGroup.add(barrel);
+
+    cannonGroup.position.set(x, 2.0 * s, z);
+    cannonGroups.push(cannonGroup);
+    
+    group.userData.cannons.push({
+       mesh: cannonGroup,
+       barrelMesh: barrel,
+       side: side,
+       localPos: new THREE.Vector3(x, 2.0 * s, z),
+       fireOffset: new THREE.Vector3(side === 'right' ? 1.5 * s : -1.5 * s, 0.3 * s, 0)
+    });
+  };
+
+  // Only 2 massive cannons per side for a kart-racer feel
+  addCannon(1.6 * s, 1.5 * s, 'right');
+  addCannon(1.6 * s, -1.5 * s, 'right');
+  addCannon(-1.6 * s, 1.5 * s, 'left');
+  addCannon(-1.6 * s, -1.5 * s, 'left');
+
+  // Group parts for destruction
+  const parts = {
+    mast: new THREE.Group(),
+    hull: new THREE.Group()
+  };
+  
+  parts.hull.add(hull, deck);
+  cannonGroups.forEach(c => parts.hull.add(c));
+
+  parts.mast.add(mainMast);
+  sailsList.forEach(s => parts.mast.add(s));
+  
+  group.add(parts.hull);
+  group.add(parts.mast);
+
+  group.userData.waterlineOffset = 1.0 * s;
+  group.userData.forwardLength = 3.5 * s;
+  group.userData.sideWidth = 2.0 * s;
+  group.userData.anchorDown = false;
+  group.userData.team = team;
+  
+  group.userData.radius = 3.0 * s; // Small collision radius
+  group.userData.parts = parts;
+  group.userData.isMastBroken = false;
+
+  group.position.y = 1.0;
+
+  group.traverse((obj) => {
     if (obj.isMesh) {
-      obj.castShadow = false;
-      obj.receiveShadow = false;
+      obj.castShadow = true;
+      obj.receiveShadow = true;
     }
   });
 
-  return ship;
+  return group;
 }

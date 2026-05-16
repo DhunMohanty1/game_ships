@@ -1,10 +1,9 @@
 import { GameLoop } from './game/GameLoop.js';
+import { UIManager } from './ui/UIManager.js';
+import { NetworkManager } from './network/NetworkManager.js';
 
-const ui = {
-  root: document.getElementById('ui'),
-  title: document.getElementById('title'),
-  hint: document.getElementById('hint'),
-};
+const networkManager = new NetworkManager();
+const game = new GameLoop(networkManager);
+const ui = new UIManager(game);
 
-const game = new GameLoop(ui);
-game.start();
+// Main.js now just sets up the managers, UIManager starts the game.

@@ -13,13 +13,13 @@ export function createOceanMaterial() {
       uWaveWavelength: { value: waveUniforms.wavelength },
       uWaveSpeed: { value: waveUniforms.speed },
 
-      uDeepColor: { value: new THREE.Color('#083055') },
-      uShallowColor: { value: new THREE.Color('#18c7c9') },
-      uFoamColor: { value: new THREE.Color('#f4fdff') },
+      uDeepColor: { value: new THREE.Color('#0066ff') }, // Richer deep blue
+      uShallowColor: { value: new THREE.Color('#00ccff') }, // Vibrant turquoise
+      uFoamColor: { value: new THREE.Color('#ffffff') }, // Pure white foam
 
-      uFogColor: { value: new THREE.Color('#8fc8e6') },
-      uFogNear: { value: 90.0 },
-      uFogFar: { value: 360.0 },
+      uFogColor: { value: new THREE.Color('#44aaff') }, // Warmer fog matching new lighting
+      uFogNear: { value: 40.0 },
+      uFogFar: { value: 150.0 },
 
       uLightDirection: {
         value: new THREE.Vector3(-0.35, 0.85, 0.15).normalize(),
@@ -114,31 +114,45 @@ export function createOceanMaterial() {
       varying vec3 vNormal;
       varying vec3 vWorldPosition;
 
+      // Simple procedural wake noise based on ship origin (0,0 for now, could pass via uniforms)
+      // We skip actual wake logic in shader to keep it simple, but we boost crest foam.
+
       void main() {
         vec3 n = normalize(vNormal);
         vec3 viewDir = normalize(cameraPosition - vWorldPosition);
         vec3 lightDir = normalize(uLightDirection);
 
         float diffuse = max(dot(n, lightDir), 0.0);
-        diffuse = 0.32 + diffuse * 0.68;
+        diffuse = 0.4 + diffuse * 0.6; // Slightly brighter ambient
 
-        float heightMix = smoothstep(-0.9, 1.0, vWaveHeight);
+        // Adjusted height mix for better gradient
+        float heightMix = smoothstep(-0.5, 1.2, vWaveHeight);
         vec3 waterColor = mix(uDeepColor, uShallowColor, heightMix);
 
-        float fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
-        float spec = pow(max(dot(reflect(-lightDir, n), viewDir), 0.0), 60.0);
+        // Stronger fresnel for that stylized "glassy" look
+        float fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 2.5);
+        
+        // Sharper, stronger specular
+        float spec = pow(max(dot(reflect(-lightDir, n), viewDir), 0.0), 80.0) * 1.5;
 
-        float foam = smoothstep(0.42, 0.95, vWaveHeight);
-        foam = pow(foam, 2.1);
-        foam += fresnel * 0.12;
+        // Stronger foam on crests
+        float foam = smoothstep(0.35, 0.85, vWaveHeight);
+        foam = pow(foam, 1.5); // make foam appear quicker
+        
+        // Add fake foam noise to break it up
+        float noise = fract(sin(dot(vWorldPosition.xz ,vec2(12.9898,78.233))) * 43758.5453);
+        foam *= (0.6 + 0.4 * noise);
+        
+        foam += fresnel * 0.15; // add a bit of fresnel to foam to highlight edges
         foam = clamp(foam, 0.0, 1.0);
 
         vec3 color = waterColor * diffuse;
-        color += fresnel * 0.18;
-        color += spec * 0.12;
+        color += fresnel * 0.25 * uShallowColor; // tint fresnel with shallow color
+        color += spec * 0.2;
 
         color = mix(color, uFoamColor, foam);
 
+        // Warm fog
         float fogAmount = smoothstep(
           uFogNear,
           uFogFar,
